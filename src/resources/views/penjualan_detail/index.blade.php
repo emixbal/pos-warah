@@ -92,17 +92,7 @@
                                     <input type="text" id="totalrp" class="form-control" readonly>
                                 </div>
                             </div>
-                            <div class="form-group row">
-                                <label for="kode_member" class="col-lg-2 control-label">Member</label>
-                                <div class="col-lg-8">
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" id="kode_member" value="{{ $memberSelected->kode_member }}">
-                                        <span class="input-group-btn">
-                                            <button onclick="tampilMember()" class="btn btn-info btn-flat" type="button"><i class="fa fa-arrow-right"></i></button>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
+                            
                             <div class="form-group row">
                                 <label for="diskon" class="col-lg-2 control-label">Diskon</label>
                                 <div class="col-lg-8">
@@ -111,12 +101,28 @@
                                         readonly>
                                 </div>
                             </div>
+                            
                             <div class="form-group row">
-                                <label for="bayar" class="col-lg-2 control-label">Bayar</label>
+                                <label for="nomer_anggota" class="col-lg-2 control-label">Anggota</label>
+                                <div class="col-lg-8">
+                                    <input type="text" name="nomer_anggota" id="nomer_anggota" class="form-control">
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <label for="voucher" class="col-lg-2 control-label">Voucher</label>
+                                <div class="col-lg-8">
+                                    <input type="number" id="voucher" class="form-control" name="voucher" value="{{ $penjualan->voucher ?? 0 }}" readonly>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group row">
+                                <label for="bayar" class="col-lg-2 control-label">Cash</label>
                                 <div class="col-lg-8">
                                     <input type="text" id="bayarrp" class="form-control" readonly>
                                 </div>
                             </div>
+                            
                             <div class="form-group row">
                                 <label for="diterima" class="col-lg-2 control-label">Diterima</label>
                                 <div class="col-lg-8">
@@ -142,16 +148,17 @@
 </div>
 
 @includeIf('penjualan_detail.produk')
-@includeIf('penjualan_detail.member')
+@includeIf('penjualan_detail.anggota_voucher')
 @endsection
 
 @push('scripts')
+<script src="{{ asset('js/config.js')}}"></script>
 <script>
     let table, table2;
+    let totalrpString;
 
     $(function () {
         $('body').addClass('sidebar-collapse');
-
         table = $('.table-penjualan').DataTable({
             responsive: true,
             processing: true,
@@ -231,6 +238,42 @@
             $(this).select();
         });
 
+        $("#nomer_anggota").on("keyup", function () {
+            if(!$(this).val()){
+                return
+            }
+            
+            let nomer_anggota = $(this).val();
+
+            totalrpString = totalrpString.replace('.', '');
+            totalrpInt = parseInt(totalrpString);
+            
+            $.ajax({
+                url: `${e_voucher_url}/api/kasir/find_anggota/${nomer_anggota}`,
+                type: `GET`,
+                success: function (anggota) {
+                    if(!anggota){
+                        return
+                    }
+                    if(anggota.length < 1){
+                        alert("Anggota tidak ditemukan")
+                        return
+                    }
+                    $("#nomor_anggota_html").html(anggota.nomer_anggota)
+                    $("#nama_anggota_html").html(anggota.nama)
+                    $("#saldo_anggota_html").html((anggota.saldo_formated)?anggota.saldo_formated:0)
+
+                    $('#modal_anggota_voucher').modal('show');
+                    console.log(anggota);
+                    return
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    alert("Terjadi Kesalahan")
+                    console.log(textStatus, errorThrown);
+                }
+            });
+        })
+
         $('.btn-simpan').on('click', function () {
             $('.form-penjualan').submit();
         });
@@ -302,6 +345,8 @@
 
         $.get(`{{ url('/transaksi/loadform') }}/${diskon}/${$('.total').text()}/${diterima}`)
             .done(response => {
+                totalrpString = response.totalrp
+
                 $('#totalrp').val('Rp. '+ response.totalrp);
                 $('#bayarrp').val('Rp. '+ response.bayarrp);
                 $('#bayar').val(response.bayar);

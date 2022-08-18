@@ -112,17 +112,20 @@ class PenjualanDetailController extends Controller
         return response(null, 204);
     }
 
-    public function loadForm($diskon = 0, $total = 0, $diterima = 0)
+    public function loadForm($diskon = 0, $total = 0, $diterima = 0, $voucher = 0)
     {
-        $bayar   = $total - ($diskon / 100 * $total);
+        $bayar   = $total - ($diskon / 100 * $total) - $voucher;
         $kembali = ($diterima != 0) ? $diterima - $bayar : 0;
         $data    = [
             'totalrp' => format_uang($total),
             'bayar' => $bayar,
             'bayarrp' => format_uang($bayar),
             'terbilang' => ucwords(terbilang($bayar). ' Rupiah'),
+            'kembali' => ($kembali),
             'kembalirp' => format_uang($kembali),
             'kembali_terbilang' => ucwords(terbilang($kembali). ' Rupiah'),
+            'voucher_show' => format_uang($voucher),
+            'voucher' => ($voucher),
         ];
 
         return response()->json($data);

@@ -85,6 +85,7 @@
                             <input type="hidden" name="total_item" id="total_item">
                             <input type="hidden" name="bayar" id="bayar">
                             <input type="hidden" name="id_member" id="id_member" value="{{ $memberSelected->id_member }}">
+                            <input type="hidden" name="bayar_voucher" id="bayar_voucher">
 
                             <div class="form-group row">
                                 <label for="totalrp" class="col-lg-2 control-label">Total</label>
@@ -112,7 +113,7 @@
                             <div class="form-group row">
                                 <label for="voucher" class="col-lg-2 control-label">Voucher</label>
                                 <div class="col-lg-8">
-                                    <input type="number" id="voucher" class="form-control" name="voucher" value="{{ $penjualan->voucher ?? 0 }}" readonly>
+                                    <input type="text" id="voucher_show" class="form-control" name="voucher_show" readonly>
                                 </div>
                             </div>
                             
@@ -156,6 +157,7 @@
 <script>
     let table, table2;
     let totalrpString;
+    let nominal_bayar_voucher;
 
     $(function () {
         $('body').addClass('sidebar-collapse');
@@ -233,7 +235,16 @@
                 $(this).val(0).select();
             }
 
-            loadForm($('#diskon').val(), $(this).val());
+            let bayar = parseInt($("#bayar").val());
+            let bayar_voucher = $("#bayar_voucher").val()
+
+            if(bayar==0){
+                $(this).val(0)
+                alert("Total bayar cash Rp 0 ")
+                return
+            }
+
+            loadForm($('#diskon').val(), $(this).val(), bayar_voucher);
         }).focus(function () {
             $(this).select();
         });
@@ -247,6 +258,13 @@
 
             totalrpString = totalrpString.replace('.', '');
             totalrpInt = parseInt(totalrpString);
+
+            if(totalrpInt<1){
+                alert("Pilih item belanja terlebih dulu")
+                $("#nomer_anggota").val("");
+                $(this).next('#kode_produk').focus();
+                return
+            }
             
             $.ajax({
                 url: `${e_voucher_url}/api/kasir/find_anggota/${nomer_anggota}`,
@@ -263,8 +281,15 @@
                     $("#nama_anggota_html").html(anggota.nama)
                     $("#saldo_anggota_html").html((anggota.saldo_formated)?anggota.saldo_formated:0)
 
+
+                    if(totalrpInt<=anggota.saldo){
+                        nominal_bayar_voucher = totalrpInt
+                    }else{
+                        nominal_bayar_voucher = parseInt(anggota.saldo)
+                    }
+
+                    $("#nominal_bayar_voucher_modal").val(nominal_bayar_voucher)
                     $('#modal_anggota_voucher').modal('show');
-                    console.log(anggota);
                     return
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
@@ -274,8 +299,31 @@
             });
         })
 
+        $("#nominal_bayar_voucher").on("keyup", function () {            
+            if(isNaN($(this).val())){
+                alert("isiskan angka");
+                return;
+            }
+        });
+
         $('.btn-simpan').on('click', function () {
+            let bayar = parseInt($("#bayar").val());
+            let diterima = parseInt($("#diterima").val());
+
+            if(bayar>0){
+                if(diterima<bayar){
+                    alert(`Uang diterima kurang`);
+                    return;
+                }
+            }
+
             $('.form-penjualan').submit();
+        });
+        
+        $('#modal_voucher_ok').on('click', function () {
+            $('#modal_anggota_voucher').modal('hide');
+            $("#diterima").val()
+            loadForm($('#diskon').val(), 0, nominal_bayar_voucher);
         });
     });
 
@@ -339,17 +387,20 @@
         }
     }
 
-    function loadForm(diskon = 0, diterima = 0) {
+    function loadForm(diskon = 0, diterima = 0, voucher = 0) {
         $('#total').val($('.total').text());
         $('#total_item').val($('.total_item').text());
 
-        $.get(`{{ url('/transaksi/loadform') }}/${diskon}/${$('.total').text()}/${diterima}`)
+        $.get(`{{ url('/transaksi/loadform') }}/${diskon}/${$('.total').text()}/${diterima}/${voucher}`)
             .done(response => {
                 totalrpString = response.totalrp
-
+                
                 $('#totalrp').val('Rp. '+ response.totalrp);
                 $('#bayarrp').val('Rp. '+ response.bayarrp);
                 $('#bayar').val(response.bayar);
+                $('#voucher_show').val('Rp. '+ response.voucher_show);
+                $('#bayar_voucher').val(response.voucher);
+                $("#total_belanja_html").html(response.bayarrp)
                 $('.tampil-bayar').text('Bayar: Rp. '+ response.bayarrp);
                 $('.tampil-terbilang').text(response.terbilang);
 
@@ -360,6 +411,7 @@
                 }
             })
             .fail(errors => {
+                console.log(errors);
                 alert('Tidak dapat menampilkan data');
                 return;
             })

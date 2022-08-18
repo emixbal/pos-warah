@@ -86,6 +86,8 @@
                             <input type="hidden" name="bayar" id="bayar">
                             <input type="hidden" name="id_member" id="id_member" value="{{ $memberSelected->id_member }}">
                             <input type="hidden" name="bayar_voucher" id="bayar_voucher">
+                            <input type="hidden" name="anggota_password" id="anggota_password">
+                            <input type="hidden" name="nomer_anggota" id="nomer_anggota_send">
 
                             <div class="form-group row">
                                 <label for="totalrp" class="col-lg-2 control-label">Total</label>
@@ -150,6 +152,7 @@
 
 @includeIf('penjualan_detail.produk')
 @includeIf('penjualan_detail.anggota_voucher')
+@includeIf('penjualan_detail.anggota_password')
 @endsection
 
 @push('scripts')
@@ -240,7 +243,6 @@
 
             if(bayar==0){
                 $(this).val(0)
-                alert("Total bayar cash Rp 0 ")
                 return
             }
 
@@ -277,6 +279,7 @@
                         alert("Anggota tidak ditemukan")
                         return
                     }
+                    $("#nomer_anggota_send").val(anggota.nomer_anggota)
                     $("#nomor_anggota_html").html(anggota.nomer_anggota)
                     $("#nama_anggota_html").html(anggota.nama)
                     $("#saldo_anggota_html").html((anggota.saldo_formated)?anggota.saldo_formated:0)
@@ -309,6 +312,7 @@
         $('.btn-simpan').on('click', function () {
             let bayar = parseInt($("#bayar").val());
             let diterima = parseInt($("#diterima").val());
+            let bayar_voucher = parseInt($("#bayar_voucher").val());
 
             if(bayar>0){
                 if(diterima<bayar){
@@ -317,7 +321,13 @@
                 }
             }
 
-            $('.form-penjualan').submit();
+            if(bayar_voucher>0){
+                $('#modal_anggota_password').modal('show');
+                return;
+            }
+
+            // $('.form-penjualan').submit();
+            submitFormPenjualan();
         });
         
         $('#modal_voucher_ok').on('click', function () {
@@ -325,7 +335,57 @@
             $("#diterima").val()
             loadForm($('#diskon').val(), 0, nominal_bayar_voucher);
         });
+
+        $("#anggota_password_modal").on("keyup", function () {
+            $("#anggota_password").val($(this).val());
+        })
+        
+        $('#modal_password_ok').on('click', function () {
+            // $('.form-penjualan').submit();
+            submitFormPenjualan();
+            return
+        });
     });
+
+    function submitFormPenjualan() {
+        $.ajax({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            url: `${base_url}/transaksi/simpan`,
+            type: "POST",
+            data: {
+                id_penjualan:$("#id_penjualan").val(),
+                id_member:$("#id_member").val(),
+                total_item:$("#total_item").val(),
+                total:$("#total").val(),
+                diterima:$("#diterima").val(),
+                diskon:$("#diskon").val(),
+                bayar:$("#bayar").val(),
+                bayar_voucher:$("#bayar_voucher").val(),
+                anggota_password:$("#anggota_password").val(),
+                nomer_anggota:$("#nomer_anggota").val()
+            },
+            success: function (response) {
+                if(!response){
+                    alert("Terjadi Kesalahan");
+                    return
+                }
+
+                if(response.status!="ok"){
+                    alert(response.message);
+                    return
+                }
+
+                window.location.replace(`${base_url}/transaksi/selesai`);
+                return
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                alert("Terjadi Kesalahan");
+                console.log(textStatus, errorThrown);
+            }
+        });
+    }
 
     function tampilProduk() {
         $('#modal-produk').modal('show');

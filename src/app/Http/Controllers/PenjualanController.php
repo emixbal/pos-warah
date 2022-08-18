@@ -81,7 +81,48 @@ class PenjualanController extends Controller
         $penjualan->total_harga = $request->total;
         $penjualan->diskon = $request->diskon;
         $penjualan->bayar = $request->bayar;
+        
         $penjualan->bayar_voucher = $request->bayar_voucher;
+        $anggota_password = $request->anggota_password;
+        $nomer_anggota = $request->nomer_anggota;
+
+        if($penjualan->bayar_voucher){
+            if(!$nomer_anggota){
+                return "nomer anggota belum diisi";
+            }
+            
+            if(!$anggota_password){
+                return "password belum diisi";
+            }
+
+            $client = new \GuzzleHttp\Client();
+            $evoucherUrl = env("E_VOUCHER_URL", "http://localhost")."/api/kasir/bayarOk";
+
+            try {
+                $response = $client->request('POST', $evoucherUrl, [
+                    'form_params' => [
+                        'nomer_anggota' => $nomer_anggota,
+                        'password' => $anggota_password,
+                        'nominal' => $penjualan->bayar_voucher,
+                    ]
+                ]);
+            } catch (\GuzzleHttp\Exception\RequestException $exception) {
+                $response = $exception->getResponse();
+
+                if($response->getStatusCode()==401){
+                    return response()->json([
+                        "status"=>"nok",
+                        "message"=>"password salah"
+                    ]);
+                }
+
+                return response()->json([
+                    "status"=>"nok",
+                    "message"=>"err"
+                ]);
+            }
+        }
+
         $penjualan->diterima = $request->diterima;
         $penjualan->update();
 
@@ -95,7 +136,11 @@ class PenjualanController extends Controller
             $produk->update();
         }
 
-        return redirect()->route('transaksi.selesai');
+        return response()->json([
+            "status"=>"ok",
+            "message"=>"ok"
+        ]);
+
     }
 
     public function show($id)

@@ -32,6 +32,9 @@ class PenjualanController extends Controller
             ->addColumn('bayar', function ($penjualan) {
                 return 'Rp. '. format_uang($penjualan->bayar);
             })
+            ->addColumn('bayar_voucher', function ($penjualan) {
+                return 'Rp. '. format_uang($penjualan->bayar_voucher);
+            })
             ->addColumn('tanggal', function ($penjualan) {
                 return tanggal_indonesia($penjualan->created_at, false);
             })

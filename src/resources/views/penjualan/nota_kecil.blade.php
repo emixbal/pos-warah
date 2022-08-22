@@ -98,7 +98,11 @@
             <td class="text-right">{{ format_uang($penjualan->diskon) }}</td>
         </tr>
         <tr>
-            <td>Total Bayar:</td>
+            <td>Bayar Voucher:</td>
+            <td class="text-right">{{ format_uang($penjualan->bayar_voucher) }}</td>
+        </tr>
+        <tr>
+            <td>Bayar Cash:</td>
             <td class="text-right">{{ format_uang($penjualan->bayar) }}</td>
         </tr>
         <tr>

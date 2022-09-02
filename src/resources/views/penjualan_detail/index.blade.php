@@ -156,13 +156,15 @@
 @endsection
 
 @push('scripts')
+<link rel="stylesheet" href="{{ asset('css/jquery.toast.css')}}">
+<script src="{{ asset('js/jquery.toast.js')}}"></script>
 <script src="{{ asset('js/config.js')}}"></script>
 <script>
     let table, table2;
     let totalrpString;
     let nominal_bayar_voucher;
 
-    $(function () {
+    $(function () {        
         $('body').addClass('sidebar-collapse');
         table = $('.table-penjualan').DataTable({
             responsive: true,
@@ -251,7 +253,11 @@
             $(this).select();
         });
 
-        $("#nomer_anggota").on("keyup", function () {
+        $("#kode_produk").on("keyup", function () {
+        })
+
+        $("#nomer_anggota").on("keyup", function (event) {
+            event.stopImmediatePropagation();
             if(!$(this).val()){
                 return
             }
@@ -276,7 +282,13 @@
                         return
                     }
                     if(anggota.length < 1){
-                        alert("Anggota tidak ditemukan")
+                        $.toast({
+                            text: 'Anggota tidak ditemukan',
+                            position: 'bottom-right',
+                            stack: false,
+                            bgColor: '#dd4b39',
+                        })
+                        event.stopImmediatePropagation();
                         return
                     }
                     $("#nomer_anggota_send").val(anggota.nomer_anggota)
@@ -325,8 +337,7 @@
                 $('#modal_anggota_password').modal('show');
                 return;
             }
-
-            // $('.form-penjualan').submit();
+            
             submitFormPenjualan();
         });
         

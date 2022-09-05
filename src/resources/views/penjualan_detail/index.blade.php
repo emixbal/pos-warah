@@ -253,11 +253,14 @@
             $(this).select();
         });
 
-        $("#kode_produk").on("keyup", function () {
+        $("#kode_produk").on("keyup", function (e) {
+            e.preventDefault();
         })
 
-        $("#nomer_anggota").on("keyup", function (event) {
-            event.stopImmediatePropagation();
+        $("#nomer_anggota").on("keyup", function (e) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+
             if(!$(this).val()){
                 return
             }

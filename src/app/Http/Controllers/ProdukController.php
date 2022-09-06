@@ -162,4 +162,22 @@ class ProdukController extends Controller
         $pdf->setPaper('a4', 'potrait');
         return $pdf->stream('produk.pdf');
     }
+
+    public function getProduk(Request $request)
+    {
+        $kode_produk = $request->kode_produk;
+        $produk = Produk::where('kode_produk', $kode_produk)->first();
+
+        if(!$produk){
+            return response()->json([
+                "message"=>"kososng",
+                "data"=>[]
+            ]);
+        }
+
+        return response()->json([
+            "message"=>"ok",
+            "data"=>$produk
+        ]);
+    }
 }

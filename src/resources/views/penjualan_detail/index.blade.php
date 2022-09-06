@@ -50,7 +50,7 @@
                             <div class="input-group">
                                 <input type="hidden" name="id_penjualan" id="id_penjualan" value="{{ $id_penjualan }}">
                                 <input type="hidden" name="id_produk" id="id_produk">
-                                <input type="text" class="form-control" name="kode_produk" id="kode_produk">
+                                <input type="text" class="form-control" name="kode_produk" id="kode_produk" autocomplete="off">
                                 <span class="input-group-btn">
                                     <button onclick="tampilProduk()" class="btn btn-info btn-flat" type="button"><i class="fa fa-arrow-right"></i></button>
                                 </span>
@@ -220,6 +220,9 @@
                     $(this).on('mouseout', function () {
                         table.ajax.reload(() => loadForm($('#diskon').val()));
                     });
+
+                    $("#kode_produk").val('');
+                    $('#kode_produk').focus();
                 })
                 .fail(errors => {
                     alert('Tidak dapat menyimpan data');
@@ -253,11 +256,40 @@
             $(this).select();
         });
 
-        $("#kode_produk").on("keyup", function (e) {
-            e.preventDefault();
+        $('#kode_produk').bind('input', function(e) {
+
+            let kode_produk = $("#kode_produk").val()
+            
+            $.ajax({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                url: `${base_url}/transaksi/get-produk`,
+                type: `POST`,
+                data: {
+                    kode_produk
+                },
+                success: function (response) {
+                    if(!response){
+                        return
+                    }
+
+                    let produk = response.data
+                    if(produk.length<1){
+                        console.log("produk tidak ditemukan");
+                        return
+                    }
+                    pilihProduk(produk.id_produk, produk.kode_produk);
+                    return
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                }
+            });
         })
 
-        $("#nomer_anggota").on("keyup", function (e) {
+        $('#nomer_anggota').bind('input', function(e) {
+        
             e.stopImmediatePropagation();
             e.preventDefault();
 
@@ -412,6 +444,7 @@
     function pilihProduk(id, kode) {
         $('#id_produk').val(id);
         $('#kode_produk').val(kode);
+
         hideProduk();
         tambahProduk();
     }
@@ -419,6 +452,7 @@
     function tambahProduk() {
         $.post('{{ route('transaksi.store') }}', $('.form-produk').serialize())
             .done(response => {
+                $("#kode_produk").val('');
                 $('#kode_produk').focus();
                 table.ajax.reload(() => loadForm($('#diskon').val()));
             })
